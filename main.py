@@ -32,10 +32,10 @@ def save_to_excel(data, filename):
         df.to_excel(filename, index=False, engine='openpyxl')
 
 
-
 driver = webdriver.Chrome(options=options)
 driver.get("https://accounts.google.com/v3/signin/identifier?hl=en_GB&ifkv=AXo7B7VGP4Y_gNfwPri72zV40Ii9kmgYbvLRXoOhOeBNkeBYcMPcPOX_Aolo1vK16FetaA4URMIfUA&flowName=GlifWebSignIn&flowEntry=ServiceLogin&dsh=S-1140670556%3A1692882589574310")
-#email: 
+
+#email:
 email = ''
 #password:
 password = ''
@@ -49,6 +49,7 @@ driver.find_element(By.XPATH,'//*[@id="password"]/div[1]/div/div[1]/input').send
 driver.find_element(By.XPATH,'//*[@id="passwordNext"]/div/button/span').click()
 time.sleep(5)
 
+
 #GO TO TWITTER
 driver.get("https://twitter.com/")
 time.sleep(10)
@@ -61,53 +62,58 @@ time.sleep(10)
 #     if window_handle != current_window:
 #         driver.switch_to.window(window_handle)
 #         break
-hashtags = ['wow' , 'funny' ,'go']
+
+hashtags = ['protest', 'funny', 'go']
 
 unique_texts = []
 seen_texts = set()
 
+# Date range for filtering tweets
+start_date = '2023-01-01'
+end_date = '2023-12-31'
+
+# Limit on number of tweets to collect
+tweet_limit = 100
 
 for hashtag in hashtags:
     driver.get("https://twitter.com/explore")
-
     time.sleep(5)
+    
+    # Find the search bar and enter the hashtag with a date range filter
     search = driver.find_element(By.XPATH,
                                  '//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div/div/div[1]/div[1]/div/div/div/div/div/div[1]/div[2]/div/div/div/form/div[1]/div/div/div/label/div[2]/div/input')
-    search.send_keys(hashtag+" lang:en") #for language filtere, you can remove
+    search.send_keys(f"{hashtag} since:{start_date} until:{end_date} lang:en")
     search.send_keys(Keys.ENTER)
-
     time.sleep(5)
-    #
-    # driver.find_element(By.XPATH,'/html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/div[1]/div[1]/div[2]/nav/div/div[2]/div/div[2]/a/div/div/span').click()
-    # time.sleep(5)
 
     actions = ActionChains(driver)
+    previous_num_unique = 0
 
-    previous_num_unique = 0  # Keep track of the number of unique tweets in the previous iteration
-
-    while True:
+    while len(unique_texts) < tweet_limit:  # Stop if the limit is reached
         # Scroll 10 times
         for _ in range(10):
             actions.send_keys(Keys.PAGE_DOWN).perform()
-            time.sleep(3)  # Giving the page some time to load new content
+            time.sleep(3)  # Allow the page to load new content
 
         # Fetch tweet data
         t_data = driver.find_elements(By.XPATH,
                                       "//div[starts-with(@class,'css-901oao r-18jsvk2 r-37j5jr r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0')]")
 
-        # Store in set
+        # Store unique tweets
         for i in t_data:
             try:
                 tweet_text = i.text
                 if tweet_text not in seen_texts:
                     unique_texts.append(tweet_text)
                     seen_texts.add(tweet_text)
+
+                    if len(unique_texts) >= tweet_limit:  # Stop if limit is reached
+                        break
+
             except StaleElementReferenceException:
-                # If a stale element exception occurs, break out of the loop
-                # and re-fetch the tweets
                 break
 
-        if len(unique_texts) == previous_num_unique:
+        if len(unique_texts) == previous_num_unique or len(unique_texts) >= tweet_limit:
             break
 
         previous_num_unique = len(unique_texts)
@@ -116,9 +122,10 @@ for hashtag in hashtags:
             print(text)
 
         print(len(unique_texts))
-        # Save the tweets to the Excel file after processing each hashtag
-        save_to_excel(list(unique_texts), "tweets.xlsx")
-# Print the unique texts
+
+    # Save the tweets to the Excel file after processing each hashtag
+    save_to_excel(unique_texts, "tweets.xlsx")
+
+# Print the collected unique tweets
 for text in unique_texts:
     print(text)
-
