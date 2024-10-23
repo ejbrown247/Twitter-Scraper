@@ -53,6 +53,7 @@ time.sleep(5)
 #GO TO TWITTER
 driver.get("https://twitter.com/")
 time.sleep(10)
+
 # current_window = driver.current_window_handle
 # con = driver.find_element(By.XPATH,'/html/body/div/div/div[2]').click()
 # wait = WebDriverWait(driver, 10)
